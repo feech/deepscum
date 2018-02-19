@@ -1,0 +1,138 @@
+ <div> 
+  <button (click)="left()"><<<</button>
+  <div>
+    <input type="text" 
+      [(ngModel)]="imageId" 
+      (keyup.enter)="goto()" />
+  </div>
+  <button>>>></button>
+
+ </div>
+ <div>
+   <div>
+     
+       <div *ngFor="let type of imageTypes"> 
+         <input type="radio" [id]="type" [value]="type" [(ngModel)]="imageType" name="image-type" />
+         <label [attr.for]="type">{{type}}</label>
+       </div>
+   </div>
+ </div>
+ <div class="im-cont" >
+   <img src="/assets/images/ima.png" 
+   />
+   <!-- (mousedown)="eventHandlerDN($event)" -->
+<!-- https://medium.com/@tarik.nzl/creating-a-canvas-component-with-free-hand-drawing-with-rxjs-and-angular-61279f577415 -->
+   <canvas  #paintbox class="im-inputbox" width="1024" height="768"
+   (mouseover)="eventHandlerMO($event)" 
+   (click)="eventHandlerClick($event)"
+   (drag)="eventHandlerDrag($event)"
+   (dragover)="eventHandlerDO($event)"
+
+   > </canvas >
+ </div>
+ 
+ ==================
+ .im-cont {
+    position: relative;		
+}	
+
+.im-inputbox {
+    position: absolute;
+    color: blue;
+    opacity: 0.15;
+    top: 0;
+    left: 0;
+    border-style: solid;
+}
+========================
+import { Component, ElementRef, AfterViewInit, ViewChild } from '@angular/core';
+
+@Component({
+  selector: 'app-root',
+  templateUrl: './app.component.html',
+  styleUrls: ['./app.component.css']
+})
+export class AppComponent implements AfterViewInit{
+  title = 'app XX';
+
+  private imageId: string ='2';
+
+  private imageTypes: string[] = ['start', 'mid', 'finish', 'none'];
+  @ViewChild('paintbox') 
+  public canvas: ElementRef;
+  // private imageType: string='mid';
+
+  private left() {
+    console.log('<<<<');
+  }
+  private right() {
+    console.log('>>>>');
+  }
+  private goto() {
+    console.log(`go ${this.imageId}`);
+  }
+
+  get imageType(): string {
+    return 'start';
+  }
+
+  set imageType(tt: string) {
+    console.log(`>>> ${tt}`);
+  }
+
+  private eventHandlerMO(s: MouseEvent) {
+    console.log(`+++ MO ${s}`);
+
+      this.cx.fillRect(0, 0, 10, 100);
+      this.cx.fillRect(10, 100, 10, 100);
+
+  }
+  private eventHandlerClick(s: MouseEvent) {
+    console.log(`+++ Click ${s.offsetX} ${s.offsetY} `);
+    this.cx.fillRect(s.offsetX-10, s.offsetY-10, 20, 20);
+  }
+  private eventHandlerDrag(s: MouseEvent) {
+    console.log(`+++ Drag ${s}`);
+  }
+  private eventHandlerDO(s: MouseEvent) {
+    console.log(`+++ DO ${s}`);
+  }
+
+
+  private cx: CanvasRenderingContext2D;  
+  
+  public ngAfterViewInit() {
+    // get the context
+    const canvasEl: HTMLCanvasElement = this.canvas.nativeElement;
+    this.cx = canvasEl.getContext('2d');
+    this.cx.fillStyle = 'rgb(200,0,0)';
+    }
+}
+=============================
+import { TestBed, async } from '@angular/core/testing';
+import { AppComponent } from './app.component';
+describe('AppComponent', () => {
+  beforeEach(async(() => {
+    TestBed.configureTestingModule({
+      declarations: [
+        AppComponent
+      ],
+    }).compileComponents();
+  }));
+  it('should create the app', async(() => {
+    const fixture = TestBed.createComponent(AppComponent);
+    const app = fixture.debugElement.componentInstance;
+    expect(app).toBeTruthy();
+  }));
+  it(`should have as title 'app'`, async(() => {
+    const fixture = TestBed.createComponent(AppComponent);
+    const app = fixture.debugElement.componentInstance;
+    expect(app.title).toEqual('app');
+  }));
+  it('should render title in a h1 tag', async(() => {
+    const fixture = TestBed.createComponent(AppComponent);
+    fixture.detectChanges();
+    const compiled = fixture.debugElement.nativeElement;
+    expect(compiled.querySelector('h1').textContent).toContain('Welcome to app!');
+  }));
+});
