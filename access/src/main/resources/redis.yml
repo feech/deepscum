@@ -1,0 +1,5 @@
+redis:
+  host: 192.168.5.136
+  port: 32768
+  database: 0
+  pass:

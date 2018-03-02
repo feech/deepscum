@@ -1,0 +1,32 @@
+.main-view {
+	display: inline-flex;
+}
+
+.im-navigator {
+	display: inline-flex;
+}
+
+.im-cont {
+    position: relative;		
+}	
+
+.im-inputbox {
+    position: absolute;
+    color: blue;
+    opacity: 0.15;
+    top: 0;
+    left: 0;
+    border-style: solid;
+}
+
+.control-section {
+	margin-top: 10px;
+}
+
+.sent {
+	background-color: gray;
+}
+
+.actual {
+	background: limegreen;
+}

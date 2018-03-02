@@ -1,0 +1,41 @@
+<div class="main-view"> 
+  <div>
+    <div class="im-navigator"> 
+      <button (click)="left()"><<<</button>
+      <div>
+        <input type="text" 
+          [(ngModel)]="imageId" 
+          (keyup.enter)="goto()" />
+      </div>
+      <button (click)="right()">>>></button>
+      <label [ngClass]="imageLoaded?'actual':'sent'">...</label>
+
+    </div>
+    <div class="control-section">
+       <div *ngFor="let type of imageTypes"> 
+         <input type="radio" [id]="type" [value]="type" [(ngModel)]="imageTypeValue" name="image-type" (click)="setClass(type)" />
+         <label [attr.for]="type">{{type}}</label>
+       </div>
+    </div>
+    <div class="control-section">
+       <div *ngFor="let type of componentsType"> 
+         <input type="radio" [id]="component" [value]="type" [(ngModel)]="currentComponent" name="components-type" (click)="currentComponent=type" />
+         <label [attr.for]="type" [style.background-color]="getColor(type)">...</label>
+         <label [attr.for]="component">{{type}}</label>
+       </div>
+      <button (click)="eraseLast()">Erase the last</button>
+    </div>
+  </div>
+  <div class="im-cont">
+   <img src="/api/image/{{imageId}}" />
+   <canvas  #paintbox class="im-inputbox" width="1024" height="768"
+   (mouseover)="dummy($event)" 
+   (click)="dummy($event)"
+   (drag)="dummy($event)"
+   (dragover)="dummy($event)"
+   (mousedown)="mouseDownHandler($event)"
+   (mouseup)="mouseUpHandler($event)"
+
+   > </canvas >
+  </div>
+</div>
