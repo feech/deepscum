@@ -16,6 +16,8 @@ question blocks
 
 
 # image augment
+## input landmark and rect
+## draw in scale mode
 ----------------
 
 # show current image

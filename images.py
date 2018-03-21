@@ -1,3 +1,6 @@
+# get uniq screenshots 
+#
+
 import argparse 
 import os
 
@@ -64,6 +67,11 @@ if __name__ == '__main__':
     survey_id = r.incr('surveys')
     r.set('survey:%d:date'%survey_id, time.asctime())
 
+    # 0 - no changes
+    # 1 - changes detected
+    # 2.. waiting stable image
+    state = None
+
     while True:
         
         time.sleep(1)
@@ -77,12 +85,13 @@ if __name__ == '__main__':
 
         if last_face is None:
             last_face = face
-            imageNumber+=1
 
             image_id = r.incr('surveys:images')
             r.set('survey:%d:image:%d:date'%(survey_id, image_id), time.asctime())
             r.set('survey:%d:image:%d:data'%(survey_id, image_id), png_in_mem)
 
+            imageNumber=1
+            state = 0
             continue
 
         c, p = imageDif(last_face, face)
@@ -91,17 +100,26 @@ if __name__ == '__main__':
         if p > 0.05: 
             print('change is detected')
             last_face = face
-            image_id = r.incr('surveys:images')
-            r.set('survey:%d:image:%d:date'%(survey_id, image_id), time.asctime())
-            r.set('survey:%d:image:%d:data'%(survey_id, image_id), png_in_mem)
-            imageNumber+=1
+            state = 1
 
         else:
-            print('change isn\'t detected')
-            
-            count, rate = imageDif(last_face, face)
+            if state == 0:
+                print('change isn\'t detected')
+            else:
+                state+=1
+                print('wait stable image %d'%state)
 
-            print('the difference %d, %f'%(count, rate))
+            if state > 5:
+                print('stable image')
+                image_id = r.incr('surveys:images')
+                r.set('survey:%d:image:%d:date'%(survey_id, image_id), time.asctime())
+                r.set('survey:%d:image:%d:data'%(survey_id, image_id), png_in_mem)
+                imageNumber+=1
+
+                state = 0
+            
+            # count, rate = imageDif(last_face, face)
+
 
             # if rate > 0.01:
 

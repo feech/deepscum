@@ -7,57 +7,14 @@ import keras.models as models
 import keras.utils.np_utils as kutils
 
 from scipy import misc
-import os
-from  distutils import filelist 
+# import os
+# from  distutils import filelist 
 
 from keras.preprocessing.image import ImageDataGenerator
 from keras.preprocessing.image import ImageDataGenerator, array_to_img, img_to_array, load_img
 
 
-# from sklearn import utils #.shuffle
-
-os.chdir('C:/Users/Kirill/Documents/prj/deepscum')
-
-# trainX = []
-# trainY = []
-
-# for i in os.listdir('data/radio'):
-#     fn = i
-#     bo = fn.split('.')[0].split('-')[1:5]
-
-#     image = misc.imread('data/radio/'+i, flatten=True)
-
-#     trainX = trainX + [image]
-#     trainY = trainY + [[1, bo[0], bo[1], bo[2], bo[3], 1, 0, 0]]
-
-# for i in os.listdir('data/checkbox'):
-#     fn = i
-#     bo = fn.split('.')[0].split('-')[1:5]
-
-#     image = misc.imread('data/checkbox/'+i, flatten=True)
-
-#     trainX = trainX + [image]
-#     trainY = trainY + [[1, bo[0], bo[1], bo[2], bo[3], 0, 1, 0]]
-
-
-# for i in os.listdir('data/fradio'):
-#     fn = i
-#     bo = fn.split('.')[0].split('-')[1:5]
-
-#     image = misc.imread('data/fradio/'+i, flatten=True)
-
-#     trainX = trainX + [image]
-#     trainY = trainY + [[0, bo[0], bo[1], bo[2], bo[3], 0, 0, 1]]
-
-# for i in os.listdir('data/fcheckbox'):
-#     fn = i
-#     bo = fn.split('.')[0].split('-')[1:5]
-
-#     image = misc.imread('data/fcheckbox/'+i, flatten=True)
-
-#     trainX = trainX + [image]
-#     trainY = trainY + [[0, bo[0], bo[1], bo[2], bo[3], 0, 0, 1]]
-
+# os.chdir('C:/Users/Kirill/Documents/prj/deepscum')
 
 
 # trainX = np.array(trainX)
@@ -87,32 +44,28 @@ uiv_generator = uiv_data_gen.flow_from_directory(
     batch_size=32,
     class_mode='binary')
 # ====================================================
-nb_filters_1 = 32 # 64
-nb_filters_2 = 64 # 128
-nb_filters_3 = 128 # 256
-nb_filters_4 = 256
-nb_conv = 3
 
 cnn = models.Sequential()
-cnn.add(conv.Convolution2D(32, (3, 3),  activation="relu", input_shape=(55, 66, 3), padding='same'))
-cnn.add(conv.MaxPooling2D(strides=(2,2)))
-
-cnn.add(conv.Convolution2D(32, (3, 3), activation="relu", padding='same'))
+cnn.add(conv.Convolution2D(64, (3, 3),  activation="relu", input_shape=(55, 66, 3), padding='same'))
 cnn.add(conv.MaxPooling2D(strides=(2,2)))
 
 cnn.add(conv.Convolution2D(64, (3, 3), activation="relu", padding='same'))
 cnn.add(conv.MaxPooling2D(strides=(2,2)))
 
+cnn.add(conv.Convolution2D(256, (3, 3), activation="relu", padding='same'))
+cnn.add(conv.MaxPooling2D(strides=(2,2)))
+
 cnn.add(core.Flatten())
 # cnn.add(core.Dropout(0.2))
-cnn.add(core.Dense(128, activation="relu")) # 4096
+cnn.add(core.Dense(256, activation="relu")) # 4096
 # cnn.add(core.Dense(1, activation="softmax"))
-cnn.add(core.Dropout(0.5))
-cnn.add(core.Dense(1, activation="sigmoid"))
+# cnn.add(core.Dropout(0.5))
+cnn.add(core.Dense(6, activation="sigmoid"))
 # cnn.add(core.Activation('sigmoid'))
 
 cnn.summary()
-cnn.compile(optimizer='sgd', loss='binary_crossentropy', metrics=['accuracy'])
+cnn.compile(optimizer='sgd', loss='mean_squared_error', metrics=['accuracy'])
+# cnn.compile(optimizer='rmsprop', loss='mean_squared_error', metrics=['accuracy'])
 # cnn.compile(optimizer='rmsprop', loss='binary_crossentropy', metrics=['accuracy'])
 # cnn.compile(loss="categorical_crossentropy", optimizer="adam", metrics=["accuracy"])
 
@@ -120,63 +73,33 @@ cnn.compile(optimizer='sgd', loss='binary_crossentropy', metrics=['accuracy'])
 # cnn.fit(trainX, trainY, batch_size=40, epochs=30, verbose=1)
 
 rr = cnn.fit_generator(
-    ui_generator,
+    a,
     steps_per_epoch=20,
-    epochs=10,
-    validation_data=uiv_generator,
-    validation_steps=50,
-    verbose=2
+    epochs=1,
+    validation_data=av,
+    validation_steps=5,
+    verbose=1
     )
 
-cnn.save_weights('ui-e40.h5')
-cnn.load_weights('ui-e40.h5')
+cnn.save_weights('obj-detection-180314.h5')
+cnn.load_weights('obj-detection-180314.h5')
 
-next = uiv_generator.next()
-for a, b in uiv_generator.next:
-a,b  = next
-print([i for i in zip(b, cnn.predict(a))])
-    break
-
-
-
-i = 0
-for batch in ui_data_gen.flow_from_directory(
-    'data/train-ui/train',
-    target_size=(55,66),
-    batch_size=32,
-    class_mode='binary',
-    save_to_dir='previewXXX'):
-    print(len(batch))
-    i += 1
-    if i > 2:
-        break
 
 
 
 rimage = np.array([misc.imread('data/train-ui/train/checkbox/'+i) for i in os.listdir('data/train-ui/train/checkbox')])
 
 
-cnn.evaluate(trainX, trainY)
-
-
-testX = test.reshape(test.shape[0], 28, 28, 1)
-testX = testX.astype(float)
-testX /= 255.0
-
-yPred = cnn.predict_classes([trainX[1:3]])
-yPred = cnn.predict([trainX[-3:]])
-
-
-cnn.save_weights('180227-100e.h5')
-cnn.load_weights('180227-100e.h5')
-
-
-rimage = np.array([misc.imread('data/randomradio.png', flatten=False)])
 rimage = np.array([
-misc.imread('data/randomradio.png', flatten=False),
-misc.imread('data/randomradio1.png', flatten=False),
-misc.imread('data/randomradio3.png', flatten=False)])
+misc.imread('data2/extract/checkbox/142-248.png', flatten=False),
+misc.imread('data2/extract/checkbox/120-25.png', flatten=False),
+misc.imread('data2/extract/fcheckbox/142-248.png', flatten=False),
+misc.imread('data2/extract/radio/137-61.png', flatten=False),
+misc.imread('data2/extract/radio/137-61-1.png', flatten=False),
+misc.imread('data2/extract/fradio/137-61.png', flatten=False)
+])*1./256
 
+yPred = cnn.predict(rimage)
 
 # ===================================
 
@@ -201,8 +124,12 @@ misc.imread('data/randomradio3.png', flatten=False)])
 
 # im_1 = img_to_array(load_img('data/randomradio3.png'))
 
-
+########################################################
+########################################################
+########################################################
 from keras.models import Sequential
+from keras.layers import Conv2D, MaxPooling2D
+import keras.layers.convolutional as conv
 from keras.layers import Conv2D, MaxPooling2D
 from keras.layers import Activation, Dropout, Flatten, Dense
 
@@ -226,6 +153,7 @@ model.add(Activation('relu'))
 model.add(Dropout(0.5))
 model.add(Dense(1))
 model.add(Activation('sigmoid'))
+model.summary()
 
 model.compile(loss='binary_crossentropy',
               optimizer='rmsprop',
@@ -287,3 +215,66 @@ inp = np.array([
 
 mo = Sequential()
 model.add(Conv2D(32, (3, 3), input_shape=(11, 11)))
+
+
+
+
+##############################################################
+##############################################################
+##############################################################
+
+
+cnn_rd = models.Sequential()
+cnn_rd.add(conv.Convolution2D(64, (3, 3),  activation="relu", input_shape=(55, 66, 3), padding='same'))
+cnn_rd.add(conv.MaxPooling2D(strides=(2,2)))
+
+cnn_rd.add(conv.Convolution2D(64, (3, 3), activation="relu", padding='same'))
+cnn_rd.add(conv.MaxPooling2D(strides=(2,2)))
+
+cnn_rd.add(conv.Convolution2D(256, (3, 3), activation="relu", padding='same'))
+cnn_rd.add(conv.MaxPooling2D(strides=(2,2)))
+
+cnn_rd.add(core.Flatten())
+# cnn_rd.add(core.Dropout(0.2))
+cnn_rd.add(core.Dense(256, activation="relu")) # 4096
+# cnn_rd.add(core.Dense(1, activation="softmax"))
+# cnn_rd.add(core.Dropout(0.5))
+cnn_rd.add(core.Dense(2, activation="sigmoid"))
+# cnn_rd.add(core.Activation('sigmoid'))
+
+cnn_rd.summary()
+cnn_rd.compile(optimizer='adadelta', loss='mean_squared_error', metrics=['accuracy'])
+# cnn_rd.compile(optimizer='rmsprop', loss='mean_squared_error', metrics=['accuracy'])
+# cnn_rd.compile(optimizer='rmsprop', loss='binary_crossentropy', metrics=['accuracy'])
+# cnn_rd.compile(loss="categorical_crossentropy", optimizer="adam", metrics=["accuracy"])
+
+
+# cnn_rd.fit(trainX, trainY, batch_size=40, epochs=30, verbose=1)
+
+rr = cnn_rd.fit_generator(
+    ard,
+    steps_per_epoch=20,
+    epochs=70,
+    validation_data=ardv,
+    validation_steps=5,
+    verbose=1
+    )
+
+cnn_rd.save_weights('obj-detection-180314.h5')
+cnn_rd.load_weights('obj-detection-180314.h5')
+
+yPred = cnn_rd.predict(rimage)
+
+
+
+
+inp = np.array([
+    1,1,1,0,0,
+    1,1,1,0,0,
+    1,1,1,0,0,
+    0,0,1,1,1,
+    0,0,1,1,1,
+    ]).reshape(1,5,5,1)
+
+mo = models.Sequential()
+mo.add(conv.Convolution2D(1, (5, 5), input_shape=(5, 5, 1), padding='same'))

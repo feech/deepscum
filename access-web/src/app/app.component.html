@@ -27,8 +27,8 @@
     </div>
   </div>
   <div class="im-cont">
-   <img src="/api/image/{{imageId}}" />
-   <canvas  #paintbox class="im-inputbox" width="1024" height="768"
+   <img class="im-view" src="/api/image/{{imageId}}" [ngStyle]="{'width': iw, 'left': il, 'top': it, 'position': relative}"/>
+   <canvas  #paintbox class="im-inputbox" width="1024" height="768" 
    (mouseover)="dummy($event)" 
    (click)="dummy($event)"
    (drag)="dummy($event)"

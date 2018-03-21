@@ -8,15 +8,22 @@
 
 .im-cont {
     position: relative;		
-}	
+    width: 1024px;
+    height: 768px;
+    overflow: hidden;
+}   
+
+.im-view {
+    position: relative;
+}
 
 .im-inputbox {
     position: absolute;
-    color: blue;
-    opacity: 0.15;
+    opacity: 0.25;
     top: 0;
     left: 0;
-    border-style: solid;
+    /*border-style: solid;*/
+    cursor: crosshair;
 }
 
 .control-section {
