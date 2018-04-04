@@ -11,6 +11,10 @@
       <label [ngClass]="imageLoaded?'actual':'sent'">...</label>
 
     </div>
+
+    <div>
+      <button (click)="predict()">PREDICT</button>
+    </div>
     <div class="control-section">
        <div *ngFor="let type of imageTypes"> 
          <input type="radio" [id]="type" [value]="type" [(ngModel)]="imageTypeValue" name="image-type" (click)="setClass(type)" />

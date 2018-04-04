@@ -410,8 +410,9 @@ def save_ar_as_png(img_ar):
     imsave('test.png', img_ar*255.)
 
 
-# split full image to pieces 
 def split_img_to_100x100(img):
+    # split full image to pieces 
+    # return array of 100x100 images
     imgs = []
     for x in range(0,1023,86):
         for y in range(0,767, 83):

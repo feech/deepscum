@@ -53,8 +53,24 @@ export class AppComponent implements OnInit{
         this.loadImage(this.imageId);
     }
     private goto() {
-        console.log(`go ${this.imageId}`);
         this.loadImage(this.imageId);
+    }
+
+    private predict() {
+        console.log(`predict`);
+        let id=this.imageId;
+        this.resetImageView();
+        this.imageLoaded = false;
+        this.cx.clearRect(0,0,1024,768);
+        this.http.get(`/predict/${id}`)
+            .subscribe(data => {
+                console.log(data);
+                this.imageTypeValue = data['class']||'none';
+                if(data['input']){
+                    this.paintImgs(data['input']);
+                    this.imageLoaded = true;
+                }
+            })
     }
 
     constructor(private http: HttpClient) { }
