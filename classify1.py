@@ -225,7 +225,7 @@ model.add(Conv2D(32, (3, 3), input_shape=(11, 11)))
 
 
 cnn_rd = models.Sequential()
-cnn_rd.add(conv.Convolution2D(64, (3, 3),  activation="relu", input_shape=(55, 66, 3), padding='same'))
+cnn_rd.add(conv.Convolution2D(64, (3, 3),  activation="relu", input_shape=(100, 100, 3), padding='same'))
 cnn_rd.add(conv.MaxPooling2D(strides=(2,2)))
 
 cnn_rd.add(conv.Convolution2D(64, (3, 3), activation="relu", padding='same'))
@@ -236,10 +236,10 @@ cnn_rd.add(conv.MaxPooling2D(strides=(2,2)))
 
 cnn_rd.add(core.Flatten())
 # cnn_rd.add(core.Dropout(0.2))
-cnn_rd.add(core.Dense(256, activation="relu")) # 4096
+cnn_rd.add(core.Dense(1024, activation="relu")) # 4096
 # cnn_rd.add(core.Dense(1, activation="softmax"))
 # cnn_rd.add(core.Dropout(0.5))
-cnn_rd.add(core.Dense(2, activation="sigmoid"))
+cnn_rd.add(core.Dense(85, activation="sigmoid"))
 # cnn_rd.add(core.Activation('sigmoid'))
 
 cnn_rd.summary()
@@ -252,20 +252,20 @@ cnn_rd.compile(optimizer='adadelta', loss='mean_squared_error', metrics=['accura
 # cnn_rd.fit(trainX, trainY, batch_size=40, epochs=30, verbose=1)
 
 rr = cnn_rd.fit_generator(
-    ard,
-    steps_per_epoch=20,
-    epochs=70,
-    validation_data=ardv,
-    validation_steps=5,
+    sis,
+    steps_per_epoch=100,
+    epochs=100,
+    validation_data=sisv,
+    validation_steps=10,
     verbose=1
     )
 
-cnn_rd.save_weights('obj-detection-180314.h5')
-cnn_rd.load_weights('obj-detection-180314.h5')
+cnn_rd.save_weights('obj-detection-180403-1-5-obj.h5')
+cnn_rd.load_weights('obj-detection-180327.h5')
 
-yPred = cnn_rd.predict(rimage)
+yPred = cnn_rd.predict(a)
 
-
+res = cnn_rd.evaluate_generator( sisv, steps=3)
 
 
 inp = np.array([

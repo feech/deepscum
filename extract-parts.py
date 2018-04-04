@@ -9,6 +9,7 @@ import io
 import os
 from PIL import Image, ImageDraw
 import random
+from functools import reduce
 
 # if __name__ == '__main__':
 os.chdir('C:/Users/Kirill/Documents/prj/deepscum')
@@ -172,12 +173,14 @@ for i in r.scan_iter('survey:*:image:*:input'):
 # 548, 565
 
 
-for i in r.scan_iter('survey:*:image:565:input'):
+for i in r.scan_iter('survey:*:image:548:input'):
+# for i in r.scan_iter('survey:*:image:565:input'):
     inp = r.get(i)
     inp = json.loads(inp)
 
 img=None
-for i in r.scan_iter('survey:*:image:565:data'):
+for i in r.scan_iter('survey:*:image:548:data'):
+# for i in r.scan_iter('survey:*:image:565:data'):
     img = Image.open(io.BytesIO(r.get(i)))
 
 # url
@@ -238,22 +241,36 @@ def s(o):
 rect={'l':0, 't':100, 'w':200, 'h': 230}
 
 H,W = 768, 1024
-h, w = 550, 550
-l = int(random.random()*(W- w-60))
-t = int(random.random()*(H- h - 100))+100
-rect = {'l':l, 't':t, 'w':w, 'h': h}
+h, w = 100, 100
 
+a=1
+for _ in range(1,100):
+    rect = gen_rect()
 
-def get_result(inp):
+    a1 = get_result(rect, inp)
+    a = max(a,len(a1))
+
+def gen_rect():
+    l = int(random.random()*(W- w-60))
+    t = int(random.random()*(H- h - 100))+100
+    return {'l':l, 't':t, 'w':w, 'h': h}
+
+# find elements in the rect
+# split by columns
+# return target vector
+def get_result(rect, inp):
     # select objects
     objects = []
     for i in inp:
         i1=toi(i)
         i2=intersection(rect,i1)
+        if i2 is None:
+            continue
         # if s(i2)>0:
             # print(i, i2, s(i2)/s(i1))
-        if s(i2)>0.5 and vertex_in_region(rect, i1)>=3:
+        if s(i2)/s(i1)>0.5 or point_in_rect(i1['x'], i1['y'], rect):
             objects.append(i)
+            # print(i['id'])
 
     # split to columns
     columns = {}
@@ -276,8 +293,8 @@ def get_result(inp):
     # sort columns by x-coordinate
     columns = {i: columns[i] for i in sorted(columns, key=lambda x: (x[0], x[2]))}
 
-    # buiild target result 
-    # [[probability, x/w, y/h, w/wr,h/hr, #class#],....]
+    # build target result 
+    # [probability, x/w, y/h, w/wr,h/hr, #class#,....]
     target = []
     for cc in columns:
         for o in columns[cc]:
@@ -286,8 +303,11 @@ def get_result(inp):
             target += class_array(o['component'])
     return target
 
+def get_classes():
+    return ['text input', 'checkbox', 'radio', 'next button', 'scrolling', 'url', 'show more', 'back button', 'check text', 'select', 'select-list', None]
+
 def class_array(s):
-    classes = ['text input', 'checkbox', 'radio', 'next button', 'scrolling', 'url', 'show more', 'back button', 'check text', 'select', 'select-list']
+    classes = get_classes()
     res = [0.]*(len(classes)+1)
     try:
         res[classes.index(s)]=1.
@@ -296,7 +316,149 @@ def class_array(s):
     return res
 
 
-nb = (l, t, l+w, t+h)
-img.crop(nb).save('saverandom.png')
+# nb = (l, t, l+w, t+h)
+# img.crop(nb).save('saverandom.png')
 
 
+
+from keras.utils import Sequence
+import random
+
+
+class SplitImageSequence(Sequence):
+
+    def __init__(self, r=None, images=None, batch_size=32):
+        self.r = r
+        self.batch_size = batch_size
+        # self.find_files(path)
+        self.images=images
+        self.empty = [0.]*16+[1.]
+        self.debug = None
+
+    def __len__(self):
+        return 1000000
+
+    def __getitem__(self, idx):
+        x, y = [], []
+        id = random.choice(self.images)
+        idi= next(r.scan_iter('survey:*:image:%s:input'%id))
+        inp = r.get(idi)
+        inp = json.loads(inp)
+        idd = next(r.scan_iter('survey:*:image:%s:data'%id))
+        img = Image.open(io.BytesIO(r.get(idd)))
+        # allow_empty = False
+        nonEmpty = 0
+        while len(x)<self.batch_size:
+
+            rect = gen_rect()
+
+            y1 = get_result(rect, inp)
+
+            
+            if len(y1)>0:
+                nonEmpty+=1
+
+
+            if nonEmpty<6 and len(y1)==0:
+                continue
+
+            if len(y1)==0:
+                nonEmpty=0 
+            # allow_empty = not allow_empty
+
+            assert len(y1)//17 < 6, 'too many objects in the rect %s in %s: %s'%(str(rect),id, str(y1))
+            y += [y1+self.empty *(5-len(y1)//17)]
+            nb = (rect['l'], rect['t'], rect['l']+rect['w'], rect['t']+rect['h'])
+            x += [np.array(img.crop(nb))*(1./255)]
+            self.debug = [id, idi, inp, idd, rect]
+        return np.array(x), np.array(y)
+
+sis= SplitImageSequence(r, images=['548', '565'])
+sisv= SplitImageSequence(r, images=['547'])
+for _ in range(50):
+a,b = sis.__getitem__(0)
+    # a[0].save('sng.png')
+    # if sum([b[0][a] for a in [16,33,50,67,84]])<5:
+    #     break
+
+
+
+# ar - array of classes
+def extract_class(ar):
+    # 1. -- <required> if prob of the object detected less 0.5 - return None
+    # 2. if there are some objects with obj-prob more 0.4 - return None
+    if reduce(lambda s, i: s+1 if i>0.4 else s, ar, 0)>1:
+        return None, ar[-1]
+    return max(zip(get_classes(), ar), key=lambda x: x[1])
+
+def extract_position(ar, dim):
+    # ar: [prob, x%, y%, w%, h%]
+    # return (x,y), (w,h)
+    return (round(ar[1]*dim[0]), round(ar[2]*dim[1])), (round(ar[3]*dim[0]), round(ar[4]*dim[1]))
+
+def extract(ar, img_ar_shape=(h, w)):
+    result = []
+    for i in range(0,84,17):
+        cl, prob = extract_class(ar[i+5:i+17]) if ar[i]>0.5 else (None, ar[i+16])
+        point, size = extract_position(ar[i:i+5], img_ar_shape) if cl else (None, None)
+        result += [(cl, round(100.*prob), point, size)]
+    return result
+
+
+# 
+def save_ar_as_png(img_ar):
+    imsave('test.png', img_ar*255.)
+
+
+# split full image to pieces 
+def split_img_to_100x100(img):
+    imgs = []
+    for x in range(0,1023,86):
+        for y in range(0,767, 83):
+            nb= (x,y, x+w, y+h)
+            imgs += [np.array(img.crop(nb))*(1./255.)]
+    return np.array(imgs)
+
+def i_to_lt(i):
+    return (i//10)*86, (i%10)*83
+
+# load image from redis
+def load_img(id):
+    idd = next(r.scan_iter('survey:*:image:%s:data'%id))
+    return Image.open(io.BytesIO(r.get(idd)))
+
+def select_valid_predictions(yPred):
+    valid_predictions = []
+    for i, e in enumerate(yPred):
+        l,t = i_to_lt(i)
+        for o in extract(e):
+            if o[0] is None or o[1]<0.5:
+                continue
+            valid_predictions += [(o[0], o[1], (o[2][0]+l, o[2][1]+t), o[3], i)]
+    return sorted(valid_predictions, key=lambda x: -x[1])
+
+def area(ar):
+    # area for objectb
+    # ar: [class, prob, (point), (size), idx]
+    # return rect - (l, t, w, h)
+    l,t = ar[2][0]-ar[3][0]//2, ar[2][1]-ar[3][1]//2
+    return (l, t, l+ar[3][0], t+ar[3][1])
+
+
+vpa = sorted([area(i) for i in vp], key=lambda x: x[0])
+
+def draw_proof(imgt, vp):
+    draw = ImageDraw.Draw(imgt)
+    
+    for o in vp:
+    # a = area(o)
+        (x,y),(w,h)=o[2],o[3]
+
+        if x and y:
+            draw.rectangle([x-w//2, y-h//2, x+w//2, y+h//2], outline='red')
+            draw.line((x-5, y-5, x+5, y+5), fill='red')
+            draw.line((x-5, y+5, x+5, y-5), fill='red')
+        # if l and t:
+            # draw.rectangle([l,t,l+w, t+h], outline='blue')
+    del draw
+    imsave('imgt.png', imgt)

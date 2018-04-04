@@ -14,11 +14,12 @@ question blocks
 
 # manualy show
 
+# server for predictions 
+----------------
 
 # image augment
 ## input landmark and rect
 ## draw in scale mode
-----------------
 
 # show current image
 
