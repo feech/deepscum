@@ -10,6 +10,7 @@ import os
 from PIL import Image, ImageDraw
 import random
 from functools import reduce
+from scipy.misc import imsave
 
 # if __name__ == '__main__':
 os.chdir('C:/Users/Kirill/Documents/prj/deepscum')
@@ -308,7 +309,7 @@ def get_classes():
 
 def class_array(s):
     classes = get_classes()
-    res = [0.]*(len(classes)+1)
+    res = [0.]*(len(classes))
     try:
         res[classes.index(s)]=1.
     except ValueError:
@@ -351,9 +352,7 @@ class SplitImageSequence(Sequence):
         while len(x)<self.batch_size:
 
             rect = gen_rect()
-
             y1 = get_result(rect, inp)
-
             
             if len(y1)>0:
                 nonEmpty+=1
@@ -375,8 +374,8 @@ class SplitImageSequence(Sequence):
 
 sis= SplitImageSequence(r, images=['548', '565'])
 sisv= SplitImageSequence(r, images=['547'])
-for _ in range(50):
-a,b = sis.__getitem__(0)
+# for _ in range(50):
+a,b = sisv.__getitem__(0)
     # a[0].save('sng.png')
     # if sum([b[0][a] for a in [16,33,50,67,84]])<5:
     #     break

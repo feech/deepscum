@@ -134,7 +134,7 @@ from keras.layers import Conv2D, MaxPooling2D
 from keras.layers import Activation, Dropout, Flatten, Dense
 
 model = Sequential()
-model.add(Conv2D(32, (3, 3), input_shape=(150, 150, 3)))
+model.add(Conv2D(32, (3, 3), input_shape=(100, 100, 3)))
 model.add(Activation('relu'))
 model.add(MaxPooling2D(pool_size=(2, 2)))
 
@@ -190,7 +190,7 @@ model.fit_generator(
         epochs=10, verbose=2,
         validation_data=validation_generator,
         validation_steps=800 // batch_size)
-
+cnn_rd.fit(a, [1,0]*16)
 
 model.save_weights('catdog-e10.h5')
 model.load_weights('catdog-e10.h5')
@@ -253,15 +253,15 @@ cnn_rd.compile(optimizer='adadelta', loss='mean_squared_error', metrics=['accura
 
 rr = cnn_rd.fit_generator(
     sis,
-    steps_per_epoch=100,
-    epochs=100,
+    steps_per_epoch=1,
+    epochs=1,
     validation_data=sisv,
     validation_steps=10,
     verbose=1
     )
 
-cnn_rd.save_weights('obj-detection-180403-1-5-obj.h5')
-cnn_rd.load_weights('obj-detection-180327.h5')
+cnn_rd.save_weights('obj-detection-180404-5-obj.h5')
+cnn_rd.load_weights('obj-detection-180328.h5')
 
 yPred = cnn_rd.predict(a)
 
