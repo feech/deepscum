@@ -243,7 +243,7 @@ cnn_rd.add(core.Dense(85, activation="sigmoid"))
 # cnn_rd.add(core.Activation('sigmoid'))
 
 cnn_rd.summary()
-cnn_rd.compile(optimizer='adadelta', loss='mean_squared_error', metrics=['accuracy'])
+cnn_rd.compile(optimizer='adadelta', loss='mean_squared_error', metrics=['mae'])
 # cnn_rd.compile(optimizer='rmsprop', loss='mean_squared_error', metrics=['accuracy'])
 # cnn_rd.compile(optimizer='rmsprop', loss='binary_crossentropy', metrics=['accuracy'])
 # cnn_rd.compile(loss="categorical_crossentropy", optimizer="adam", metrics=["accuracy"])
@@ -253,17 +253,18 @@ cnn_rd.compile(optimizer='adadelta', loss='mean_squared_error', metrics=['accura
 
 rr = cnn_rd.fit_generator(
     sis,
-    steps_per_epoch=1,
-    epochs=1,
+    steps_per_epoch=100,
+    epochs=50,
     validation_data=sisv,
     validation_steps=10,
     verbose=1
     )
 
-cnn_rd.save_weights('obj-detection-180404-5-obj.h5')
-cnn_rd.load_weights('obj-detection-180328.h5')
+cnn_rd.save_weights('obj-detection-180409-5-obj.h5')
+cnn_rd.load_weights('obj-detection-180408-5-obj.h5')
 
 yPred = cnn_rd.predict(a)
+yPred = cnn_rd.predict(imgs)
 
 res = cnn_rd.evaluate_generator( sisv, steps=3)
 

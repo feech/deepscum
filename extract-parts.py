@@ -173,16 +173,11 @@ for i in r.scan_iter('survey:*:image:*:input'):
 # extract samles
 # 548, 565
 
+inp= r.get(next(r.scan_iter('survey:*:image:544:input')))
+inp = json.loads(inp)
 
-for i in r.scan_iter('survey:*:image:548:input'):
-# for i in r.scan_iter('survey:*:image:565:input'):
-    inp = r.get(i)
-    inp = json.loads(inp)
-
-img=None
-for i in r.scan_iter('survey:*:image:548:data'):
-# for i in r.scan_iter('survey:*:image:565:data'):
-    img = Image.open(io.BytesIO(r.get(i)))
+img= r.get(next(r.scan_iter('survey:*:image:544:data')))
+img = Image.open(io.BytesIO(img))
 
 # url
 # get rect 0,0,w,100 - show url
@@ -334,7 +329,7 @@ class SplitImageSequence(Sequence):
         # self.find_files(path)
         self.images=images
         self.empty = [0.]*16+[1.]
-        self.debug = None
+        self.debug = {}
 
     def __len__(self):
         return 1000000
@@ -342,45 +337,51 @@ class SplitImageSequence(Sequence):
     def __getitem__(self, idx):
         x, y = [], []
         id = random.choice(self.images)
-        idi= next(r.scan_iter('survey:*:image:%s:input'%id))
-        inp = r.get(idi)
-        inp = json.loads(inp)
-        idd = next(r.scan_iter('survey:*:image:%s:data'%id))
-        img = Image.open(io.BytesIO(r.get(idd)))
-        # allow_empty = False
-        nonEmpty = 0
-        while len(x)<self.batch_size:
+        try:
+            idi= next(r.scan_iter('survey:*:image:%s:input'%id))
+            inp = r.get(idi)
+            inp = json.loads(inp)
+            idd = next(r.scan_iter('survey:*:image:%s:data'%id))
+            img = Image.open(io.BytesIO(r.get(idd)))
+            # allow_empty = False
+            nonEmpty = 0
+            iters=0
+            while len(x)<self.batch_size:
+                iters +=1
+                rect = gen_rect()
+                y1 = get_result(rect, inp)
+                
+                if len(y1)>0:
+                    nonEmpty+=1
 
-            rect = gen_rect()
-            y1 = get_result(rect, inp)
-            
-            if len(y1)>0:
-                nonEmpty+=1
 
+                if nonEmpty<6 and len(y1)==0 and iters< 2000:
+                    continue
 
-            if nonEmpty<6 and len(y1)==0:
-                continue
+                if len(y1)==0:
+                    nonEmpty=0 
+                # allow_empty = not allow_empty
 
-            if len(y1)==0:
-                nonEmpty=0 
-            # allow_empty = not allow_empty
-
-            assert len(y1)//17 < 6, 'too many objects in the rect %s in %s: %s'%(str(rect),id, str(y1))
-            y += [y1+self.empty *(5-len(y1)//17)]
-            nb = (rect['l'], rect['t'], rect['l']+rect['w'], rect['t']+rect['h'])
-            x += [np.array(img.crop(nb))*(1./255)]
-            self.debug = [id, idi, inp, idd, rect]
+                assert len(y1)//17 < 6, 'too many objects in the rect %s in %s: %s'%(str(rect),id, str(y1))
+                y += [y1+self.empty *(5-len(y1)//17)]
+                nb = (rect['l'], rect['t'], rect['l']+rect['w'], rect['t']+rect['h'])
+                x += [np.array(img.crop(nb))*(1./255)]
+                # self.debug = [id, idi, inp, idd, rect]
+        except Exception as x:
+            print('on %s'%id)
+            print(x)
+            assert False
         return np.array(x), np.array(y)
 
-sis= SplitImageSequence(r, images=['548', '565'])
-sisv= SplitImageSequence(r, images=['547'])
+sis= SplitImageSequence(r, images=['548', '565', '544', 
+    '550', '552', '554', '558', '560', '563', '565'])
+sisv= SplitImageSequence(r, images=['547', '559', '566'])
 # for _ in range(50):
 a,b = sisv.__getitem__(0)
+a,b = sis.__getitem__(0)
     # a[0].save('sng.png')
     # if sum([b[0][a] for a in [16,33,50,67,84]])<5:
     #     break
-
-
 
 # ar - array of classes
 def extract_class(ar):
@@ -396,6 +397,7 @@ def extract_position(ar, dim):
     return (round(ar[1]*dim[0]), round(ar[2]*dim[1])), (round(ar[3]*dim[0]), round(ar[4]*dim[1]))
 
 def extract(ar, img_ar_shape=(h, w)):
+    # return [(class, prob, (x,y), (w,h))]
     result = []
     for i in range(0,84,17):
         cl, prob = extract_class(ar[i+5:i+17]) if ar[i]>0.5 else (None, ar[i+16])
@@ -428,14 +430,21 @@ def load_img(id):
     return Image.open(io.BytesIO(r.get(idd)))
 
 def select_valid_predictions(yPred):
+    # select all-significant objects
+    # return [(class, prob, (x,y), (w,h))]
     valid_predictions = []
     for i, e in enumerate(yPred):
         l,t = i_to_lt(i)
         for o in extract(e):
-            if o[0] is None or o[1]<0.5:
+            if o[0] is None or o[1]<50:
                 continue
             valid_predictions += [(o[0], o[1], (o[2][0]+l, o[2][1]+t), o[3], i)]
     return sorted(valid_predictions, key=lambda x: -x[1])
+
+
+def omit_less_significant_objects(vp):
+    # skip less significant objects
+
 
 def area(ar):
     # area for objectb
@@ -449,16 +458,41 @@ vpa = sorted([area(i) for i in vp], key=lambda x: x[0])
 
 def draw_proof(imgt, vp):
     draw = ImageDraw.Draw(imgt)
+    colors= {'radio': 'red', 'checkbox': 'blue'}
     
     for o in vp:
     # a = area(o)
         (x,y),(w,h)=o[2],o[3]
+        color = colors.get(o[0], 'green')
 
         if x and y:
-            draw.rectangle([x-w//2, y-h//2, x+w//2, y+h//2], outline='red')
-            draw.line((x-5, y-5, x+5, y+5), fill='red')
-            draw.line((x-5, y+5, x+5, y-5), fill='red')
+            draw.rectangle([x-w//2, y-h//2, x+w//2, y+h//2], outline=color)
+            draw.line((x-5, y-5, x+5, y+5), fill=color)
+            draw.line((x-5, y+5, x+5, y-5), fill=color)
         # if l and t:
             # draw.rectangle([l,t,l+w, t+h], outline='blue')
     del draw
     imsave('imgt.png', imgt)
+
+
+
+
+sis= SplitImageSequence(r, images=['548', '565', '544', 
+    '550', '552', '554', '558', '560', '563', '565',
+    '539', '538'])
+sisv= SplitImageSequence(r, images=['547', '559', '566'])
+# for _ in range(50):
+a,b = sisv.__getitem__(0)
+a,b = sis.__getitem__(0)
+
+
+def prof(id):
+id='538'
+img= r.get(next(r.scan_iter('survey:*:image:%s:data'%id)))
+img = Image.open(io.BytesIO(img))
+imgs=split_img_to_100x100(img)
+yPred = cnn_rd.predict(imgs)
+vp=select_valid_predictions(yPred)
+draw_proof(img, vp)
+
+

@@ -250,7 +250,7 @@ export class AppComponent implements OnInit{
         }
 
         let params;
-        if(w==0 && h == 0){
+        if(w<3 && h <3){
             params = {x: this.ccX(l), 
                 y: this.ccY(t), 
                 component: this.currentComponent};
