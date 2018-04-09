@@ -20,7 +20,7 @@ public class Config {
     @Bean
     JedisConnectionFactory jedisConnectionFactory() {
         JedisConnectionFactory jedisConnectionFactory = new JedisConnectionFactory();
-        jedisConnectionFactory.setHostName("192.168.5.136");
+        jedisConnectionFactory.setHostName("192.168.1.17");
         jedisConnectionFactory.setPort(32768);
         jedisConnectionFactory.setDatabase(0);
         jedisConnectionFactory.setUsePool(true);

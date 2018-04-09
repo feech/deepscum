@@ -23,7 +23,7 @@ os.chdir('C:/Users/Kirill/Documents/prj/deepscum')
 
 
 # face = misc.face()
-r = redis.StrictRedis(host='192.168.5.136', port=32768, db=0)# a = misc.imsave('data/screen.png', face) # First we need to create the PNG file
+r = redis.StrictRedis(host='192.168.1.17', port=32768, db=0)# a = misc.imsave('data/screen.png', face) # First we need to create the PNG file
 # r = redis.StrictRedis(host='localhost', port=32768, db=0)# a = misc.imsave('data/screen.png', face) # First we need to create the PNG file
 
 face = misc.imread('data/screen.png')

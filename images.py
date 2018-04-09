@@ -46,14 +46,14 @@ def isDif(f1, f2):
 # survey:id:image:id:object:{type, rect, waytoget}
 
 # import redis
-# r = redis.StrictRedis(host='192.168.5.136', port=32768, db=0)
+# r = redis.StrictRedis(host='192.168.1.17', port=32768, db=0)
 # x = r.get('foo')
 
 
 if __name__ == '__main__':
 
     last_face = None
-    server = '192.168.5.136:1'
+    server = '192.168.1.17:1'
     password = 'ltkfqlt1'
     # parser = argparse.ArgumentParser(description='Process some integers.')
     # parser.add_argument('--index', type=int,
