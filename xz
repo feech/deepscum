@@ -1,0 +1,152 @@
+import redis
+import json
+import numpy as np
+
+r =redis.StrictRedis(host='127.0.0.1', port=6379)
+
+lens = []
+for k in r.scan_iter('*:data'):
+   lens.append(len(r.get(k)))
+
+    # print(k, len(r.get(k)))
+
+
+# for k in r.scan_iter('set:*:username'):
+#     print(k, r.get(k))
+
+
+# r.get('set:1:sequence:5:pair')
+
+# for k in r.scan_iter('*'):
+#     r.delete(k)
+
+# r.set('sets',0)
+# r.set('sequences',0)
+
+inp = json.loads(r.get('set:24:sequence:221:data'))
+
+len([a for a in inp if a[3]!=0])
+
+
+def format_input(inp):
+    tl = inp[-1][4]-inp[0][4]
+    step = tl/10000.0
+
+    adp=[]
+    adp.append(inp[0])
+
+    i_origin=1
+    curr_time=inp[0][4]+step
+
+    # while(inp[i_origin-1][4]<=curr_time and inp[i_origin][4]>=curr_time):
+    #     i_origin+=1
+
+    while curr_time<= inp[-1][4]:
+        
+        while inp[i_origin][4]<curr_time:
+            i_origin+=1
+
+
+        lpoint=inp[i_origin-1][:]
+        rpoint=inp[i_origin][:]
+        if rpoint[4]-lpoint[4]>100:
+            extra_point=lpoint[:]
+            extra_point[4]=rpoint[4]-30
+            if extra_point[4]<curr_time:
+                lpoint=extra_point
+            else:
+                rpoint=extra_point
+
+        d=(curr_time-lpoint[4])/(rpoint[4]-lpoint[4])
+
+        adp_s = [ (rpoint[0]-lpoint[0])*d+lpoint[0],
+                (rpoint[1]-lpoint[1])*d+lpoint[1],
+                lpoint[2],
+                lpoint[3],
+                curr_time]
+        adp.append(adp_s)
+        curr_time+=step
+    while len(adp)<10001:
+        adp.append(inp[-1])
+
+    return adp
+
+def normalize_inp(inp):
+    a = np.array(inp)
+    return a/np.array([1600, 1200, 1,1,10000])
+
+import keras.layers.core as core
+from keras.models import Sequential, Model
+from keras.layers.core import Dense
+from keras.layers import Flatten, Input, Subtract
+from keras import backend as K
+
+input_shape=(10001,5)
+left_input=Input(input_shape)
+right_input=Input(input_shape)
+
+dnm = Sequential()
+dnm.add(Dense(100, activation='relu', input_shape=input_shape))
+dnm.add(Dense(100, activation='relu'))
+dnm.add(Flatten())
+dnm.add(Dense(30, activation='sigmoid'))
+
+encoded_l = dnm(left_input)
+encoded_r = dnm(right_input)
+
+# siam= Sequential()
+# siam.add(Merge([encoded_l, encoded_r]))
+# siam.add(Dense(1, activation='sigmoid'))
+
+
+# L1_distance = lambda x: K.abs(x[0]-x[1])
+# both = merge([encoded_l, encoded_r], mode=L1_distance, output_shape=lambda x: x[0])
+# predict = Dense(1, activation='sigmoid')(both)
+
+substracted = Subtract()([encoded_l, encoded_r])
+
+out = Dense(1, activation='sigmoid')(substracted)
+siam = Model(inputs=[left_input, right_input], outputs=out)
+
+siam.compile(loss='binary_crossentropy', optimizer='adadelta')
+
+inp3 = inp2.reshape(1,10001,5)
+siam.predict([inp3,inp3])
+
+
+
+from keras.layers import Lambda
+r1=Input(shape=(3,2))
+r2=Input(shape=(3,2))
+
+l1 = Lambda(lambda x: x)(r1)
+l2 = Lambda(lambda x: x)(r2)
+
+
+ss = Subtract()([l1,l2])
+
+m = Model([r1,r2], outputs=ss)
+
+a = np.arange(6).reshape(1,3,2)
+b = np.arange(6).reshape(1,3,2)
+
+m.predict([a,b])
+
+
+# set:18:sequence:164:data
+# 
+def t_get_set_from_k(s):
+    return s.split(b':')[1]
+def q_get_seq_from_k(s):
+    return s.split(b':')[3]
+
+invalid_users= {b'111', b'SID', b'A123456', b'lalalala'}
+
+def get_seqs(r):
+    res = set();
+    for k in r.scan_iter('*:data'):
+        username = r.get(b'set:'+t_get_set_from_k(k)+b':username')
+        if username in invalid_users:
+            continue
+        res.add(q_get_seq_from_k(k))
+    return res
