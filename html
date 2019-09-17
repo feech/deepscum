@@ -1,0 +1,19 @@
+ <div> 
+  <button (click)="left()"><<<</button>
+  <div>
+    <input type="text" 
+      [(ngModel)]="imageId" 
+      (keyup.enter)="goto()" />
+  </div>
+  <button>>>></button>
+
+ </div>
+ <div>
+   <div>
+     
+       <div *ngFor="let type of imageTypes"> 
+         <input type="radio" [id]="type" [value]="type" [(ngModel)]="imageType" name="image-type" />
+         <label [attr.for]="type">{{type}}</label>
+       </div>
+   </div>
+ </div>
